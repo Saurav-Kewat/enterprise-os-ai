@@ -143,6 +143,7 @@ export function LiveChat() {
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionBaseUrl, setSessionBaseUrl] = useState<string | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -179,13 +180,12 @@ export function LiveChat() {
       const res = await fetch("/api/watson/message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, sessionId }),
+        body: JSON.stringify({ text, sessionId, sessionBaseUrl }),
       });
 
       const data = await res.json();
 
       if (!res.ok || data.error) {
-        // API route returned an error (e.g., missing API key)
         const errMsg = data.error ?? "IBM agent did not respond.";
         const isApiKeyMissing = errMsg.includes("IBM_WATSON_API_KEY");
 
@@ -204,8 +204,8 @@ export function LiveChat() {
           )
         );
       } else {
-        // ── Real IBM agent response ──────────────────────────────────────
         if (data.sessionId) setSessionId(data.sessionId);
+        if (data.sessionBaseUrl) setSessionBaseUrl(data.sessionBaseUrl);
 
         setMessages((p) =>
           p.map((m) =>
@@ -231,7 +231,7 @@ export function LiveChat() {
     } finally {
       setIsSending(false);
     }
-  }, [input, isSending, sessionId]);
+  }, [input, isSending, sessionId, sessionBaseUrl]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
