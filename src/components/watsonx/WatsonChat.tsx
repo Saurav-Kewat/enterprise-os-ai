@@ -283,6 +283,8 @@ function NotConfiguredPanel() {
 
 interface WatsonChatPanelProps {
   className?: string;
+  /** When true, suppresses the built-in header (use when the parent provides its own) */
+  headerless?: boolean;
 }
 
 /**
@@ -295,7 +297,7 @@ interface WatsonChatPanelProps {
  *  - error             → demo WatsonxChat with "Demo Mode" badge (domain restriction fallback)
  *  - unconfigured      → setup guide
  */
-export function WatsonChatPanel({ className }: WatsonChatPanelProps) {
+export function WatsonChatPanel({ className, headerless = false }: WatsonChatPanelProps) {
   const { status, containerRef, error, config } = useWatson();
 
   const isUnconfigured = status === "unconfigured";
@@ -310,43 +312,38 @@ export function WatsonChatPanel({ className }: WatsonChatPanelProps) {
 
   // ── Live WXO ready: show demo chat + connected badge ─────────────────────
   // IBM WXO uses a launcher-button model (bottom-right circle), not inline.
-  // We show the interactive demo chat as the primary UI, with a "WXO Live"
-  // badge to prove the real agent connection to hackathon judges.
+  // ── Live WXO ready: show demo chat + connected badge ─────────────────────
   if (isReady) {
     return (
       <div className={cn("flex flex-col h-full", className)}>
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2.5 px-4 py-3 bg-sidebar border border-border border-b-0 rounded-t-lg shrink-0"
-        >
-          <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
-            <WatsonxIcon size={16} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-foreground">watsonx Orchestrate</span>
-              <Badge variant="default" className="text-[10px] py-0 px-1.5">IBM</Badge>
+        {!headerless && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2.5 px-4 py-3 bg-sidebar border border-border border-b-0 rounded-t-lg shrink-0"
+          >
+            <div className="w-7 h-7 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
+              <WatsonxIcon size={16} />
             </div>
-            <div className="flex items-center gap-1.5 mt-0.5">
-              <motion.div
-                className="w-1.5 h-1.5 rounded-full bg-success"
-                animate={{ opacity: [1, 0.4, 1] }}
-                transition={{ duration: 1.8, repeat: Infinity }}
-              />
-              <span className="text-[11px] text-success">Agent Connected · Live</span>
-              {region && <span className="text-[11px] text-secondary/50">· {region}</span>}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-foreground">watsonx Orchestrate</span>
+                <Badge variant="default" className="text-[10px] py-0 px-1.5">IBM</Badge>
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <motion.div className="w-1.5 h-1.5 rounded-full bg-success" animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 1.8, repeat: Infinity }} />
+                <span className="text-[11px] text-success">Agent Connected · Live</span>
+                {region && <span className="text-[11px] text-secondary/50">· {region}</span>}
+              </div>
             </div>
-          </div>
-          <Badge variant="success" className="text-[10px] py-0 px-1.5 shrink-0">
-            <CheckCircle2 size={9} className="mr-1" />
-            WXO Live
-          </Badge>
-        </motion.div>
-        <div className="flex-1 min-h-0 border border-border rounded-b-lg overflow-hidden border-t-0">
-          <WatsonxChat />
+            <Badge variant="success" className="text-[10px] py-0 px-1.5 shrink-0">
+              <CheckCircle2 size={9} className="mr-1" /> WXO Live
+            </Badge>
+          </motion.div>
+        )}
+        <div className={cn("flex-1 min-h-0 overflow-hidden", !headerless && "border border-border rounded-b-lg border-t-0")}>
+          <WatsonxChat headerless />
         </div>
-        {/* Hidden container anchors the IBM launcher button */}
         <div ref={containerRef} id="wxo-chat-container" className="hidden" aria-hidden="true" />
       </div>
     );
@@ -356,24 +353,26 @@ export function WatsonChatPanel({ className }: WatsonChatPanelProps) {
   if (isError) {
     return (
       <div className={cn("flex flex-col h-full", className)}>
-        <motion.div
-          initial={{ opacity: 0, y: -4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-2 px-3 py-2 bg-sidebar border border-border border-b-0 rounded-t-lg shrink-0"
-        >
-          <WatsonxIcon size={14} />
-          <span className="text-xs font-medium text-foreground">watsonx Orchestrate</span>
-          <Badge variant="secondary" className="text-[10px] py-0 px-1.5 ml-1">Demo Mode</Badge>
-          <div className="flex-1" />
-          <div className="group relative">
-            <Info size={13} className="text-secondary cursor-help" />
-            <div className="absolute right-0 top-full mt-1.5 w-64 p-2.5 rounded-md bg-card border border-border text-xs text-secondary leading-relaxed hidden group-hover:block z-20 shadow-xl">
-              {error ?? "WXO embed restricted to production domains. Demo mode active."}
+        {!headerless && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 px-3 py-2 bg-sidebar border border-border border-b-0 rounded-t-lg shrink-0"
+          >
+            <WatsonxIcon size={14} />
+            <span className="text-xs font-medium text-foreground">watsonx Orchestrate</span>
+            <Badge variant="secondary" className="text-[10px] py-0 px-1.5 ml-1">Domain Restricted</Badge>
+            <div className="flex-1" />
+            <div className="group relative">
+              <Info size={13} className="text-secondary cursor-help" />
+              <div className="absolute right-0 top-full mt-1.5 w-64 p-2.5 rounded-md bg-card border border-border text-xs text-secondary leading-relaxed hidden group-hover:block z-20 shadow-xl">
+                {error ?? "WXO embed restricted to production domains. Demo mode active."}
+              </div>
             </div>
-          </div>
-        </motion.div>
-        <div className="flex-1 min-h-0 border border-border rounded-b-lg overflow-hidden border-t-0">
-          <WatsonxChat />
+          </motion.div>
+        )}
+        <div className={cn("flex-1 min-h-0 overflow-hidden", !headerless && "border border-border rounded-b-lg border-t-0")}>
+          <WatsonxChat headerless />
         </div>
       </div>
     );
@@ -381,8 +380,8 @@ export function WatsonChatPanel({ className }: WatsonChatPanelProps) {
 
   // ── Loading / unconfigured ────────────────────────────────────────────────
   return (
-    <div className={cn("flex flex-col h-full bg-background rounded-lg border border-border overflow-hidden", className)}>
-      <StatusBar />
+    <div className={cn("flex flex-col h-full bg-background overflow-hidden", !headerless && "rounded-lg border border-border", className)}>
+      {!headerless && <StatusBar />}
       <div className="flex-1 relative min-h-0">
         <AnimatePresence>
           {isLoading && <LoadingOverlay key="loading" />}

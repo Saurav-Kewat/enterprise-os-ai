@@ -66,7 +66,7 @@ function now() {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function WatsonxChat() {
+export function WatsonxChat({ headerless = false }: { headerless?: boolean }) {
   const [messages, setMessages] = useState<ChatMessage[]>(
     SEED_MESSAGES.filter((m) => m.role !== "system")
   );
@@ -142,8 +142,9 @@ export function WatsonxChat() {
   };
 
   return (
-    <div className="flex flex-col h-full bg-background rounded-lg border border-border overflow-hidden">
+    <div className={cn("flex flex-col h-full bg-background overflow-hidden", !headerless && "rounded-lg border border-border")}>
       {/* ── Header ────────────────────────────────────────────────────────── */}
+      {!headerless && (
       <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-sidebar shrink-0">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center">
@@ -170,6 +171,7 @@ export function WatsonxChat() {
           </div>
         </div>
       </div>
+      )}
 
       {/* ── Messages ──────────────────────────────────────────────────────── */}
       <div
