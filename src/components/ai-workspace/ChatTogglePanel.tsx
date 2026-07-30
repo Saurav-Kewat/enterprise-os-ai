@@ -10,8 +10,9 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Bot } from "lucide-react";
-import { WatsonProvider, WatsonChatPanel } from "@/components/watsonx";
+import { WatsonProvider } from "@/components/watsonx";
 import { WatsonxChat } from "@/components/ai-workspace/WatsonxChat";
+import { LiveChat } from "@/components/ai-workspace/LiveChat";
 import { WatsonxIcon } from "@/components/ai-workspace/ChatComponents";
 import { Badge } from "@/components/ui/badge";
 import type { WatsonConfig } from "@/lib/watson-config";
@@ -112,7 +113,7 @@ function SharedHeader({ mode, hasCredentials, onChange }: SharedHeaderProps) {
                 animate={{ opacity: [1, 0.4, 1] }}
                 transition={{ duration: 1.8, repeat: Infinity }}
               />
-              <span className="text-[11px] text-primary">Connecting to IBM WXO…</span>
+              <span className="text-[11px] text-primary">Live · IBM WXO Agent · Direct channel</span>
             </>
           )}
         </div>
@@ -162,8 +163,13 @@ export function ChatTogglePanel({ watsonConfig }: ChatTogglePanelProps) {
               transition={{ duration: 0.15 }}
               className="h-full"
             >
+              {/*
+               * WatsonProvider initialises the IBM WXO connection.
+               * LiveChat uses useWatsonConversation().send() to forward
+               * messages directly to the live IBM agent — no canned responses.
+               */}
               <WatsonProvider config={watsonConfig}>
-                <WatsonChatPanel headerless />
+                <LiveChat />
               </WatsonProvider>
             </motion.div>
           )}
