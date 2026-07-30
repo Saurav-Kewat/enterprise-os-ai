@@ -23,7 +23,7 @@ import {
   ChevronDown, Loader2, Wifi, WifiOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useWatson, useWatsonConversation } from "@/components/watsonx";
+import { useWatson } from "@/components/watsonx";
 import { cn } from "@/lib/utils";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -138,11 +138,11 @@ function Bubble({ msg }: { msg: Message }) {
 
 export function LiveChat() {
   const { status, isReady } = useWatson();
-  const { send: sendToAgent } = useWatsonConversation();
 
   const [messages, setMessages] = useState<Message[]>([WELCOME]);
   const [input, setInput] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -166,7 +166,7 @@ export function LiveChat() {
     setInput("");
     setIsSending(true);
 
-    // Add user message
+    // Add user message immediately
     const userMsg: Message = { id: makeId(), role: "user", content: text, timestamp: ts() };
     setMessages((p) => [...p, userMsg]);
 
@@ -175,38 +175,63 @@ export function LiveChat() {
     setMessages((p) => [...p, { id: pendingId, role: "agent", content: "", timestamp: ts(), pending: true }]);
 
     try {
-      // Send to real IBM WXO agent via WatsonProvider context
-      // On a whitelisted domain (Vercel), this calls the real agent
-      await sendToAgent(text);
+      // ── Call Next.js API route → IBM WXO REST API ──────────────────────
+      const res = await fetch("/api/watson/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, sessionId }),
+      });
 
-      // On localhost the WXO widget is domain-restricted, so we won't get
-      // a response back via the stub instance. Show a helpful status.
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        // API route returned an error (e.g., missing API key)
+        const errMsg = data.error ?? "IBM agent did not respond.";
+        const isApiKeyMissing = errMsg.includes("IBM_WATSON_API_KEY");
+
+        setMessages((p) =>
+          p.map((m) =>
+            m.id === pendingId
+              ? {
+                  ...m,
+                  pending: false,
+                  content: isApiKeyMissing
+                    ? "⚠️ IBM_WATSON_API_KEY is not configured.\n\nAdd it to Vercel → Settings → Environment Variables (no NEXT_PUBLIC_ prefix) and redeploy."
+                    : `⚠️ ${errMsg}`,
+                  timestamp: ts(),
+                }
+              : m
+          )
+        );
+      } else {
+        // ── Real IBM agent response ──────────────────────────────────────
+        if (data.sessionId) setSessionId(data.sessionId);
+
+        setMessages((p) =>
+          p.map((m) =>
+            m.id === pendingId
+              ? { ...m, pending: false, content: data.response, timestamp: ts() }
+              : m
+          )
+        );
+      }
+    } catch (err) {
       setMessages((p) =>
         p.map((m) =>
           m.id === pendingId
             ? {
                 ...m,
                 pending: false,
-                content: isReady
-                  ? "Message forwarded to IBM WXO agent. Awaiting response…"
-                  : "Message queued. IBM watsonx Orchestrate is connecting — domain whitelist required for full responses on localhost.\n\nDeploy to Vercel to enable live agent responses.",
+                content: `⚠️ Network error: ${err instanceof Error ? err.message : "request failed"}`,
                 timestamp: ts(),
               }
-            : m
-        )
-      );
-    } catch {
-      setMessages((p) =>
-        p.map((m) =>
-          m.id === pendingId
-            ? { ...m, pending: false, content: "Error forwarding to IBM agent. Please retry.", timestamp: ts() }
             : m
         )
       );
     } finally {
       setIsSending(false);
     }
-  }, [input, isSending, sendToAgent, isReady]);
+  }, [input, isSending, sessionId]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
