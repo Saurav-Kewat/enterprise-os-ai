@@ -28,11 +28,10 @@ type Mode = "demo" | "live";
 
 interface ToggleProps {
   mode: Mode;
-  hasCredentials: boolean;
   onChange: (m: Mode) => void;
 }
 
-function ModeToggle({ mode, hasCredentials, onChange }: ToggleProps) {
+function ModeToggle({ mode, onChange }: ToggleProps) {
   return (
     <div
       className="flex items-center gap-0.5 p-0.5 rounded-lg bg-background border border-border shrink-0"
@@ -41,28 +40,19 @@ function ModeToggle({ mode, hasCredentials, onChange }: ToggleProps) {
     >
       {(["demo", "live"] as const).map((m) => {
         const isActive = mode === m;
-        const isDisabled = m === "live" && !hasCredentials;
         return (
           <button
             key={m}
-            onClick={() => !isDisabled && onChange(m)}
-            disabled={isDisabled}
+            onClick={() => onChange(m)}
             aria-pressed={isActive}
-            aria-label={
-              m === "demo"
-                ? "Demo mode — simulated responses"
-                : hasCredentials
-                ? "Live mode — IBM watsonx Orchestrate"
-                : "Live mode — credentials not configured"
-            }
+            aria-label={m === "demo" ? "Demo mode — simulated responses" : "Live mode — IBM watsonx Orchestrate"}
             className={cn(
               "flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-all duration-200",
               isActive
                 ? m === "live"
                   ? "bg-primary text-white shadow-sm"
                   : "bg-accent text-foreground shadow-sm"
-                : "text-secondary hover:text-foreground",
-              isDisabled && "opacity-40 cursor-not-allowed"
+                : "text-secondary hover:text-foreground"
             )}
           >
             {m === "live" && isActive && (
@@ -85,11 +75,10 @@ function ModeToggle({ mode, hasCredentials, onChange }: ToggleProps) {
 
 interface SharedHeaderProps {
   mode: Mode;
-  hasCredentials: boolean;
   onChange: (m: Mode) => void;
 }
 
-function SharedHeader({ mode, hasCredentials, onChange }: SharedHeaderProps) {
+function SharedHeader({ mode, onChange }: SharedHeaderProps) {
   return (
     <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border bg-sidebar shrink-0">
       <div className="w-8 h-8 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center shrink-0">
@@ -120,7 +109,7 @@ function SharedHeader({ mode, hasCredentials, onChange }: SharedHeaderProps) {
       </div>
 
       {/* Toggle embedded in header right side */}
-      <ModeToggle mode={mode} hasCredentials={hasCredentials} onChange={onChange} />
+      <ModeToggle mode={mode} onChange={onChange} />
     </div>
   );
 }
@@ -129,12 +118,11 @@ function SharedHeader({ mode, hasCredentials, onChange }: SharedHeaderProps) {
 
 export function ChatTogglePanel({ watsonConfig }: ChatTogglePanelProps) {
   const [mode, setMode] = useState<Mode>("demo");
-  const hasCredentials = watsonConfig !== null;
 
   return (
     <div className="flex flex-col h-full bg-background rounded-lg border border-border overflow-hidden">
       {/* Single shared header — toggle lives here */}
-      <SharedHeader mode={mode} hasCredentials={hasCredentials} onChange={setMode} />
+      <SharedHeader mode={mode} onChange={setMode} />
 
       {/* Chat body — fills remaining height, no extra header */}
       <div className="flex-1 min-h-0">
