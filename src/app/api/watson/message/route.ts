@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 
-const HOST_URL            = process.env.NEXT_PUBLIC_WXO_HOST_URL ?? "";
-const AGENT_ID            = process.env.NEXT_PUBLIC_WXO_AGENT_ID ?? "";
-const IBM_API_KEY         = process.env.IBM_WATSON_API_KEY ?? "";
+// Read server-side env vars — prefer non-prefixed (always available in API routes)
+// then fall back to NEXT_PUBLIC_ (inlined at build time, also available server-side)
+const HOST_URL  = process.env.WXO_HOST_URL  ?? process.env.NEXT_PUBLIC_WXO_HOST_URL  ?? "";
+const AGENT_ID  = process.env.WXO_AGENT_ID  ?? process.env.NEXT_PUBLIC_WXO_AGENT_ID  ?? "";
+const IBM_API_KEY = process.env.IBM_WATSON_API_KEY ?? "";
 const SERVICE_INSTANCE_ID = (() => {
-  const crn = process.env.NEXT_PUBLIC_WXO_CRN ?? "";
+  const crn = process.env.WXO_CRN ?? process.env.NEXT_PUBLIC_WXO_CRN ?? "";
   return crn.split(":")[7] ?? "";
 })();
 
@@ -75,10 +77,19 @@ async function sendMessage(token: string, sessionId: string, text: string, sessi
 }
 
 export async function POST(request: Request) {
+  // Guard: all required env vars must be present
   if (!IBM_API_KEY) {
     return NextResponse.json({
       error: "IBM_WATSON_API_KEY not configured on server.",
       action: "Add IBM_WATSON_API_KEY (no NEXT_PUBLIC_) to Vercel → Settings → Environment Variables, then redeploy.",
+    }, { status: 503 });
+  }
+
+  if (!HOST_URL || !AGENT_ID) {
+    return NextResponse.json({
+      error: "IBM Watson configuration missing on server.",
+      missing: { HOST_URL: !HOST_URL, AGENT_ID: !AGENT_ID, SERVICE_INSTANCE_ID: !SERVICE_INSTANCE_ID },
+      action: "Add WXO_HOST_URL, WXO_AGENT_ID, and WXO_CRN (without NEXT_PUBLIC_ prefix) to Vercel environment variables and redeploy.",
     }, { status: 503 });
   }
 
