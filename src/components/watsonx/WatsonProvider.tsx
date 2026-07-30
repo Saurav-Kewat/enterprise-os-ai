@@ -148,16 +148,26 @@ export function WatsonProvider({ config, children }: WatsonProviderProps) {
 
         if (config!.platform === "WXO") {
           // ── watsonx Orchestrate native embed ──────────────────────────────
-          // Uses window.wxOConfiguration + wxoLoader.init()
-          // The container div must have the id we pass as rootElementID.
-          const containerId = "wxo-chat-container";
-          if (containerRef.current) containerRef.current.id = containerId;
+          // Uses IBM's EXACT embed script pattern:
+          //   window.wxOConfiguration = { ..., rootElementID: "root", ... }
+          //   wxoLoader.init();
+          //
+          // IBM mounts their React chat app into the element with id="root".
+          // In Next.js the root is "#__next", so we create a #root shim if
+          // it doesn't already exist and let IBM use it.
+          const ROOT_ID = "root";
+          if (!document.getElementById(ROOT_ID)) {
+            const rootEl = document.createElement("div");
+            rootEl.id = ROOT_ID;
+            // Append to body — IBM will add their launcher/chat overlay here
+            document.body.appendChild(rootEl);
+          }
 
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (window as any).wxOConfiguration = {
             orchestrationID:    config!.orchestrationID,
             hostURL:            config!.hostURL,
-            rootElementID:      containerId,
+            rootElementID:      ROOT_ID,          // IBM's exact value
             deploymentPlatform: config!.deploymentPlatform,
             crn:                config!.crn,
             chatOptions: {
@@ -276,6 +286,11 @@ export function WatsonProvider({ config, children }: WatsonProviderProps) {
         try { instanceRef.current.destroy(); } catch { /* ignore */ }
         instanceRef.current = null;
         getWatsonWindow().watsonAssistantChatInstance = undefined;
+      }
+      // Remove the #root shim we created (only if IBM didn't already own it)
+      const rootShim = document.getElementById("root");
+      if (rootShim && rootShim.childElementCount === 0) {
+        rootShim.remove();
       }
       dispatch({ type: "RESET" });
     };
